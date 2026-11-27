@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FDE Case Drill</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* VOICE: calm engagement workbook, precise, coach-like
+   IDEA: a consultant's case file: brief, client call notes, scratch work, then the build
+   PICTURE: the live workspace itself (step rail + case file + Python bench)
+   COLOUR and TYPE: white / ink / ultramarine; Spectral titles, Inter body, JetBrains Mono code
+   LAYOUT: sticky header, step rail, two-column workbench that stacks under 980px */
+:root{color-scheme:light dark;
+--bg:light-dark(#ffffff,#0d0e18);--ink:light-dark(#14110f,#e8e8f1);--mute:light-dark(#5f636e,#9ca1b3);
+--acc:light-dark(#1d2bd8,#8e98ff);--accs:light-dark(#eef0ff,#1b1f45);--line:light-dark(#e2e4ea,#262a40);
+--panel:light-dark(#f6f7f9,#141629);--ok:light-dark(#0f7a48,#4fd18f);--okb:light-dark(#e7f6ee,#10291e);
+--bad:light-dark(#b3261e,#ff8a80);--badb:light-dark(#fdeceb,#2d1414);--warn:light-dark(#8a5a00,#f2c46d)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:Spectral,Georgia,serif;font-weight:600;line-height:1.1;margin:0 0 .4em;text-wrap:balance}
+h1{font-size:clamp(28px,3.4vw,40px)}h2{font-size:26px}h3{font-size:19px}
+p{margin:0 0 .8em}a{color:var(--acc)}
+code,pre,textarea.code{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:13.5px}
+pre{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px;margin:0 0 12px;white-space:pre}
+code{overflow-wrap:anywhere}
+header{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.bar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;padding:10px max(3vw,14px);max-width:1440px;margin:0 auto}
+.brand{font-family:Spectral,serif;font-weight:600;font-size:20px;margin-right:auto}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;gap:2px;flex-wrap:wrap}
+.seg button{border:0;background:none;color:var(--ink);font:500 14px Inter,sans-serif;padding:8px 14px;border-radius:999px;min-height:38px;cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--acc);color:#fff}
+:root[data-theme=dark] .seg button[aria-pressed=true]{color:#0d0e18}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .seg button[aria-pressed=true]{color:#0d0e18}}
+.timer{font:600 20px "JetBrains Mono",monospace;font-variant-numeric:tabular-nums;padding:4px 12px;border-radius:8px;background:var(--accs);color:var(--acc);white-space:nowrap}
+.timer.low{background:var(--badb);color:var(--bad)}
+.chip{font-size:13px;color:var(--mute);white-space:nowrap}
+.chip b{font-weight:600;color:var(--ink)}
+main{max-width:1440px;margin:0 auto;padding:18px max(3vw,14px) 60px}
+.rail{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:16px;align-items:center}
+.rail .part{font-size:13px;color:var(--mute);padding:0 6px;white-space:nowrap}
+.rail button{flex:none;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:500 14px Inter,sans-serif;padding:9px 14px;border-radius:8px;min-height:42px;cursor:pointer;white-space:nowrap}
+.rail button[aria-current=step]{border-color:var(--acc);background:var(--accs);color:var(--acc)}
+.rail button:disabled{opacity:.45;cursor:not-allowed}
+.rail button .n{display:inline-block;width:20px;height:20px;border-radius:50%;background:var(--panel);font-size:12px;line-height:20px;text-align:center;margin-right:6px}
+.grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:22px;align-items:start}
+@media(max-width:980px){.grid{grid-template-columns:minmax(0,1fr)}}
+.card{border:1px solid var(--line);border-radius:12px;padding:20px;background:var(--bg)}
+.tools{position:sticky;top:76px}
+@media(max-width:980px){.tools{position:static}}
+.muted{color:var(--mute)}.small{font-size:14px}
+.brief{border-left:3px solid var(--acc);padding:4px 0 4px 16px;margin:12px 0 16px;font-family:Spectral,serif;font-size:19px;line-height:1.45}
+.who{display:flex;gap:12px;align-items:center;margin-bottom:6px}
+.av{width:40px;height:40px;border-radius:50%;background:var(--acc);color:var(--bg);display:grid;place-items:center;font-weight:600;flex:none}
+button.btn{border:1px solid var(--acc);background:var(--acc);color:#fff;font:600 15px Inter,sans-serif;padding:10px 16px;border-radius:8px;min-height:44px;cursor:pointer}
+:root[data-theme=dark] button.btn{color:#0d0e18}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) button.btn{color:#0d0e18}}
+button.ghost{border:1px solid var(--line);background:var(--bg);color:var(--ink);font:500 15px Inter,sans-serif;padding:10px 14px;border-radius:8px;min-height:44px;cursor:pointer}
+button:focus-visible,textarea:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+textarea,input[type=text],input[type=number]{width:100%;font:16px/1.5 Inter,sans-serif;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+textarea.code{font-size:14px;line-height:1.5;tab-size:4;white-space:pre;overflow:auto;background:var(--panel)}
+.chat{display:flex;flex-direction:column;gap:10px;max-height:420px;overflow-y:auto;padding:4px 2px 10px}
+.msg{max-width:88%;padding:10px 14px;border-radius:12px;font-size:15px}
+.msg.me{align-self:flex-end;background:var(--accs);color:var(--ink);border-bottom-right-radius:3px}
+.msg.cl{align-self:flex-start;background:var(--panel);border:1px solid var(--line);border-bottom-left-radius:3px}
+.meter{height:8px;border-radius:99px;background:var(--panel);overflow:hidden;border:1px solid var(--line)}
+.meter i{display:block;height:100%;background:var(--acc)}
+.fb{border-radius:8px;padding:10px 12px;margin:8px 0;font-size:15px}
+.fb.ok{background:var(--okb);color:var(--ok)}.fb.bad{background:var(--badb);color:var(--bad)}.fb.info{background:var(--accs);color:var(--ink)}
+ul.check{list-style:none;padding:0;margin:8px 0}
+ul.check li{padding:5px 0 5px 28px;position:relative;font-size:15px}
+ul.check li::before{content:"";position:absolute;left:4px;top:11px;width:12px;height:12px;border-radius:3px;border:2px solid var(--mute)}
+ul.check li.y::before{background:var(--ok);border-color:var(--ok)}
+ul.check li.n::before{border-color:var(--bad)}
+.ftabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.ftabs button{border:1px solid var(--line);background:var(--bg);color:var(--ink);font:500 13px "JetBrains Mono",monospace;padding:7px 10px;border-radius:6px;min-height:36px;cursor:pointer}
+.ftabs button[aria-pressed=true]{border-color:var(--acc);color:var(--acc);background:var(--accs)}
+.tbl{max-height:300px;overflow:auto;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font:13px "JetBrains Mono",monospace}
+th,td{padding:5px 9px;border-bottom:1px solid var(--line);text-align:left;white-space:pre}
+th{position:sticky;top:0;background:var(--panel);font-weight:500}
+.out{min-height:60px;max-height:260px;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px;font:13px/1.5 "JetBrains Mono",monospace;white-space:pre-wrap;margin-top:8px}
+.out.err{color:var(--bad)}
+.count{display:grid;grid-template-columns:minmax(0,1fr) 120px;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+@media(max-width:520px){.count{grid-template-columns:minmax(0,1fr)}}
+.test{border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin:6px 0;font-size:15px}
+.test.ok{border-color:var(--ok)}.test.bad{border-color:var(--bad)}
+.tick{font-weight:600;margin-right:6px}.test.ok .tick{color:var(--ok)}.test.bad .tick{color:var(--bad)}
+details{margin:8px 0}summary{cursor:pointer;font-weight:500;min-height:32px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+.stat{border:1px solid var(--line);border-radius:10px;padding:14px}
+.stat b{display:block;font:600 clamp(26px,3vw,34px) Spectral,serif}
+.stat span{font-size:13px;color:var(--mute)}
+.pb{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:18px}
+.pb ol,.pb ul{padding-left:20px;margin:0}.pb li{margin:4px 0}
+.cases{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:12px 0}
+.case{border:1px solid var(--line);border-radius:10px;padding:14px;text-align:left;background:var(--bg);color:var(--ink);font:inherit;cursor:pointer}
+.case[aria-pressed=true]{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc)}
+.case b{font-family:Spectral,serif;font-size:18px;display:block}
+.banner{background:var(--accs);border:1px solid var(--acc);border-radius:10px;padding:12px 16px;margin-bottom:14px}
+.kbd{font:12px "JetBrains Mono",monospace;border:1px solid var(--line);border-radius:4px;padding:1px 5px}
+@media(max-width:600px){header{position:static}.tools{position:static}}
+@media(prefers-reduced-motion:no-preference){.msg:nth-last-child(-n+2){animation:in .18s ease-out}@keyframes in{from{opacity:0;transform:translateY(4px)}}}
+</style>
+</head>
+<body>
+<header><div class="bar">
+  <div class="brand">FDE case drill</div>
+  <div class="seg" role="group" aria-label="View"><button data-act="view" data-v="case" id="v-case">Case</button><button data-act="view" data-v="playbook" id="v-playbook">Playbook</button><button data-act="view" data-v="history" id="v-history">History</button></div>
+  <div class="seg" role="group" aria-label="Mode"><button data-act="mode" data-v="drill" id="m-drill">Drill</button><button data-act="mode" data-v="mock" id="m-mock">Timed mock</button></div>
+  <span class="timer" id="timer" hidden></span>
+  <span class="chip" id="pystat">Python: <b>loading…</b></span>
+</div></header>
+<main id="app"></main>
+<script type="application/json" id="gen">{"FILES": {"A": {"shipments.csv": "shipment_id,carrier_code,promised_date,delivered_date,status\nS1043,bm,2026-08-18,2026-08-16,DELIVERED\nS1046,bm,2026-09-04,2026-09-03,DELIVERED\nS1061,OT,2026-07-15,2026-07-15,DELIVERED\nS1049,BM,2026-07-26,2026-07-25,DELIVERED\nS1008,FX,09/20/2026,09/18/2026,DELIVERED\nS1037,BM,09/28/2026,09/28/2026,DELIVERED\nS1023,RD,07/27/2026,07/27/2026,DELIVERED\nS1002,FX,2026-09-14,2026-09-13,DELIVERED\nS1024,RD,2026-09-18,2026-09-17,DELIVERED\nS1060,OT,08/04/2026,08/02/2026,DELIVERED\nS1013,FX,2026-07-07,2026-07-06,DELIVERED\nS1058,OT,2026-09-29,2026-09-29,DELIVERED\nS1042,BM,2026-07-04,2026-07-09,DELIVERED\nS1021,RD ,07/13/2026,07/12/2026,DELIVERED\nS1026,rd,07/30/2026,08/01/2026,DELIVERED\nS1001,FX,2026-08-27,2026-08-26,DELIVERED\nS1010,fx,2026-08-10,2026-08-08,DELIVERED\nS1066,RD,2026-06-29,2026-06-28,DELIVERED\nS1014,FX,2026-09-11,2026-09-10,DELIVERED\nS1027,RD,09/19/2026,09/23/2026,DELIVERED\nS1016,fx,09/29/2026,09/28/2026,DELIVERED\nS1039,BM,2026-07-10,2026-07-08,DELIVERED\nS1055,OT,2026-07-28,2026-07-28,DELIVERED\nS1048,BM,2026-08-02,2026-08-04,DELIVERED\nS1018,FX,08/23/2026,08/22/2026,DELIVERED\nS1072,FX,2026-08-29,,CANCELLED\nS1053,OT,2026-09-02,2026-08-31,DELIVERED\nS1007,FX,2026-08-29,2026-08-27,DELIVERED\nS1059,ot,2026-07-03,2026-07-01,DELIVERED\nS1030,RD,2026-09-15,2026-09-15,DELIVERED\nS1067,bm,2026-10-03,2026-10-01,DELIVERED\nS1069,FX,2026-06-27,2026-06-25,DELIVERED\nS1025, RD,07/18/2026,07/20/2026,DELIVERED\nS1020,RD,2026-07-03,2026-07-03,DELIVERED\nS1017,FX,2026-09-10,2026-09-10,DELIVERED\nS1033,rd,08/04/2026,08/02/2026,DELIVERED\nS1041,BM,09/26/2026,09/25/2026,DELIVERED\nS1073,RD,2026-07-13,,IN_TRANSIT\nS1040,BM,2026-09-29,2026-09-28,DELIVERED\nS1019, RD,2026-07-01,2026-07-01,DELIVERED\nS1012,FX,07/03/2026,07/01/2026,DELIVERED\nS1068,RD,2026-10-06,2026-10-06,DELIVERED\nS1050,BM,08/26/2026,08/25/2026,DELIVERED\nS1056,OT,2026-08-10,2026-08-10,DELIVERED\nS1047,BM,2026-09-28,2026-09-28,DELIVERED\nS1015,fx,2026-08-09,2026-08-07,DELIVERED\nS1006,FX,09/06/2026,09/04/2026,DELIVERED\nS1038,BM,2026-08-31,2026-08-29,DELIVERED\nS1032,rd,2026-08-05,2026-08-05,DELIVERED\nS1029,RD,2026-08-02,2026-08-01,DELIVERED\nS1075,BM,2026-07-12,,IN_TRANSIT\nS1071,BM,2026-09-03,,CANCELLED\nS1062,OT,2026-08-17,2026-08-15,DELIVERED\nS1047,BM,2026-09-28,2026-09-28,DELIVERED\nS1034,RD,2026-08-17,2026-08-15,DELIVERED\nS1010,fx,2026-08-10,2026-08-08,DELIVERED\nS1017,FX,2026-09-10,2026-09-10,DELIVERED\nS1031,RD,2026-07-17,2026-07-17,DELIVERED\nS1064,OT,07/05/2026,07/04/2026,DELIVERED\nS1051,OT,2026-07-26,2026-07-24,DELIVERED\nS1070,RD,2026-07-01,,CANCELLED\nS1069,FX,2026-06-27,2026-06-25,DELIVERED\nS1022,rd,09/17/2026,09/15/2026,DELIVERED\nS1035,RD,2026-08-27,2026-09-01,DELIVERED\nS1012,FX,07/03/2026,07/01/2026,DELIVERED\nS1076,OT,08/11/2026,,IN_TRANSIT\nS1052,ot,2026-08-19,2026-08-17,DELIVERED\nS1074,RD,07/16/2026,,IN_TRANSIT\nS1069,FX,2026-06-27,2026-06-25,DELIVERED\nS1009,FX,2026-08-05,2026-08-03,DELIVERED\nS1028,rd,09/16/2026,09/14/2026,DELIVERED\nS1004,FX,2026-09-27,2026-09-26,DELIVERED\nS1063,OT,08/02/2026,08/01/2026,DELIVERED\nS1036,BM,2026-07-18,2026-07-17,DELIVERED\nS1054,OT ,08/05/2026,08/04/2026,DELIVERED\nS1044,BM,2026-07-15,2026-07-18,DELIVERED\nS1057,ot,07/10/2026,07/10/2026,DELIVERED\nS1005,fx,2026-09-22,2026-09-22,DELIVERED\nS1011,fx,2026-07-14,2026-07-13,DELIVERED\nS1065,RD,2026-06-24,2026-06-24,DELIVERED\nS1045,bm,2026-09-27,2026-09-27,DELIVERED\nS1003,FX,2026-07-24,2026-07-22,DELIVERED\n", "carriers.csv": "carrier_code,carrier_name\nFX,Falcon Express\nRD,Redline Freight\nBM,Bluemark Carriers\nOT,Otter Transport\n"}, "B": {"payments.csv": "payment_id,vendor_id,invoice_no,amount,paid_date\nP5059,V03,88412,-640.50,2026-05-20\nP5058,V03,88412,640.50,2026-04-09\nP5010,V07,INV-69166,2013.48,2026-02-24\nP5050,V06,SW-2606,980.00,2026-06-03\nP5068,V08,INV-00456,\"12,480.00\",2026-09-01\nP5048,V06,SW-2604,980.00,2026-04-03\nP5039,V03,015589,\"$2,516.79\",2026-01-26\nP5001,V08,INV-38999,8758.75,2026-06-11\nP5013,V05,INV-29612,\"2,621.49\",2026-03-07\nP5022,V04,22617,8840.42,2026-08-05\nP5007,V05,37867,\"6,513.95\",2026-02-17\nP5054,V06,SW-2610,980.00,2026-10-03\nP5067,V08,456,12480.00,2026-08-19\nP5005,V03,INV-08543,\"2,110.47\",2026-07-12\nP5017,V08,098064,\"$9,304.66\",2026-02-21\nP5027,V07,072016,\"$1,220.02\",2026-08-23\nP5047,V06,SW-2603,980.00,2026-03-03\nP5008,V08,63136,\"1,839.48\",2026-08-22\nP5065,V07,5521,401.00,2026-06-22\nP5057,V03,88412,640.50,2026-04-07\nP5019,V01,010945,2678.59,2026-08-28\nP5071,V08,77120,-215.00,2026-06-01\nP5016,V04,inv 4062,1693.67,2026-04-28\nP5029,V07,INV-53658,2090.76,2026-08-23\nP5051,V06,SW-2607,980.00,2026-07-03\nP5031,V05,091309,9722.54,2026-10-01\nP5053,V06,SW-2609,980.00,2026-09-03\nP5002,V04,inv 50700,5251.25,2026-05-21\nP5066,V08,000456,\"$12,480.00\",2026-08-03\nP5037,V03,INV-20171,\"4,983.91\",2026-08-29\nP5033,V08,INV-66248,\"$3,772.70\",2026-08-03\nP5034,V03,90291,3214.20,2026-05-25\nP5011,V04,006103,5618.34,2026-06-23\nP5061,V05,7781,3200.00,2026-05-14\nP5044,V07,39604,\"4,658.72\",2026-01-29\nP5026,V07,INV-57420,2524.05,2026-10-19\nP5032,V05,INV-40032,2689.32,2026-02-05\nP5003,V04,2844,2259.66,2026-02-28\nP5046,V06,SW-2602,980.00,2026-02-03\nP5025,V01,inv 38336,1169.76,2026-10-18\nP5023,V08,22638,8785.36,2026-05-07\nP5009,V07,inv 85197,\"1,703.50\",2026-06-19\nP5041,V05,012845,\"$1,865.73\",2026-07-08\nP5052,V06,SW-2608,980.00,2026-08-03\nP5030,V07,56384,9361.42,2026-09-07\nP5020,V03,029305,\"1,007.21\",2026-04-01\nP5036,V03,INV-71621,\"$2,811.72\",2026-04-26\nP5056,V02,inv 123,\"$1,250.00\",2026-03-02\nP5069,V01,INV-20931,\"5,615.20\",2026-09-12\nP5063,V04,PL-7781,-3200.00,2026-07-15\nP5024,V05,39699,\"4,235.05\",2026-10-13\nP5043,V01,INV-98736,1887.59,2026-03-17\nP5060,V04,PL-7781,\"3,200.00\",2026-05-01\nP5038,V01,37376,5599.14,2026-01-23\nP5035,V03,22030,\"$3,871.49\",2026-10-15\nP5015,V04,INV-22923,4469.35,2026-08-06\nP5040,V04,11438,\"2,788.26\",2026-03-21\nP5049,V06,SW-2605,980.00,2026-05-03\nP5064,V07,CW-5521,410.00,2026-06-08\nP5028,V07,36667,158.16,2026-03-18\nP5062,V04,PL7781,\"$3,200.00\",2026-06-02\nP5070,V02,20931,5615.20,2026-09-30\nP5055,V01,INV-00123,1250.00,2026-02-11\nP5021,V07,inv 72257,5521.34,2026-02-25\nP5012,V01,049451,8833.21,2026-08-25\nP5045,V06,SW-2601,980.00,2026-01-03\nP5018,V03,3093,\"$9,552.11\",2026-04-13\nP5004,V01,INV-94062,\"4,942.97\",2026-08-13\nP5042,V03,011259,6167.17,2026-01-25\nP5014,V07,065620,2424.10,2026-02-25\nP5006,V07,23535,\"6,131.20\",2026-07-12\n", "vendors.csv": "vendor_id,vendor_name,tax_id\nV01,Acme Medical Supply,41-1188201\nV02,ACME MEDICAL SUPPLY INC,41-1188201\nV03,Northgate Linen,52-7730419\nV04,Pinecrest Labs,38-2209914\nV05,Pinecrest Laboratories LLC,38-2209914\nV06,Summit Waste Services,27-6651002\nV07,Clearwater IT,61-4402297\nV08,Halvorsen Pharmacy Supply,45-9013376\n"}, "C": {"downtime_events.csv": "event_id,machine_id,start_ts,end_ts,reason_code\nE006,M-7,2026-10-10 10:15,2026-10-10 14:15,CHG\nE053,M5,2026-10-15 14:00,2026-10-15 18:00,ELEC\nE059,M02,2026-10-24 16:00,2026-10-24 19:00,ELEC\nE033,M-6,2026-10-30 15:30,2026-10-30 20:15,PM\nE017,M02,2026-10-03 20:15,2026-10-03 21:45,CHG\nE067,m08,2026-10-19 01:00,2026-10-19 08:00,ELEC\nE029,M6,2026-10-16 17:30,2026-10-16 19:30,MAT\nE021,M07,2026-10-21 13:00,2026-10-21 14:00,HYD\nE038,M01,2026-10-15 11:45,2026-10-15 12:30,MAT\nE049,M-06,2026-10-20 06:00,2026-10-20 12:00,PM\nE064,M03,2026-10-30 18:00,,HYD\nE027,M-5,2026-10-22 01:30,2026-10-22 03:30,HYD\nE012,m03,2026-10-19 00:45,2026-10-19 05:15,PM\nE011,M2,2026-10-01 11:45,2026-10-01 12:15,HYD\nE043,M-3,2026-10-16 06:15,2026-10-16 07:00,ELEC\nE025,M-07,2026-10-21 15:30,2026-10-21 16:30,JAM\nE013,M-07,2026-10-07 03:15,2026-10-07 06:15,ELEC\nE063,M1,2026-11-01 02:00,2026-11-01 09:00,JAM\nE041,M01,2026-10-18 16:30,2026-10-18 18:00,CHG\nE045,M-3,2026-10-14 07:45,2026-10-14 09:15,HYD\nE026,M-04,2026-10-18 16:30,2026-10-18 21:15,PM\nE014,M07,2026-10-09 14:00,2026-10-09 16:00,CHG\nE060,M-02,2026-10-24 16:10,2026-10-24 19:25,ELEC\nE007,M2,2026-10-23 06:45,2026-10-23 08:15,JAM\nE037,m01,2026-10-05 03:30,2026-10-05 04:30,HYD\nE028,m02,2026-10-16 08:30,2026-10-16 10:30,MAT\nE004,m02,2026-10-30 12:15,2026-10-30 13:00,JAM\nE051,M-02,2026-10-08 09:00,2026-10-08 12:30,HYD\nE015,M04,2026-10-03 06:30,2026-10-03 10:30,MAT\nE065,M8,2026-10-04 01:00,2026-10-04 08:00,ELEC\nE050,M6,2026-10-27 06:00,2026-10-27 12:00,PM\nE001,M05,2026-10-24 11:00,2026-10-24 18:00,PM\nE003,M3,2026-10-04 18:15,2026-10-04 22:45,PM\nE046,M3,2026-10-28 05:30,2026-10-28 07:00,HYD\nE024,m04,2026-10-29 04:00,2026-10-29 10:30,PM\nE023,M-06,2026-10-17 14:45,2026-10-17 16:45,HYD\nE030,M-02,2026-10-17 20:30,2026-10-17 22:30,ELEC\nE058,M7,2026-10-11 02:10,2026-10-11 07:25,HYD\nE052,M02,2026-10-08 09:10,2026-10-08 12:55,HYD\nE044,m01,2026-10-04 10:15,2026-10-04 12:15,MAT\nE040,M-07,2026-10-23 17:30,2026-10-23 18:00,HYD\nE022,m01,2026-10-14 09:15,2026-10-14 12:15,CHG\nE035,M02,2026-10-01 06:15,2026-10-01 09:15,MAT\nE056,M-1,2026-10-21 07:10,2026-10-21 09:55,JAM\nE020,m01,2026-10-16 10:15,2026-10-16 11:15,CHG\nE009,M-05,2026-10-20 21:30,2026-10-20 22:15,ELEC\nE002,M05,2026-10-29 05:00,2026-10-29 07:00,HYD\nE008,m02,2026-10-05 08:00,2026-10-05 10:00,ELEC\nE048,M-06,2026-10-13 06:00,2026-10-13 12:00,PM\nE054,M05,2026-10-15 14:10,2026-10-15 18:25,ELEC\nE042,m04,2026-10-27 18:30,2026-10-27 21:30,JAM\nE034,M-4,2026-10-20 18:45,2026-10-20 20:15,MAT\nE031,M-6,2026-10-27 13:30,2026-10-27 14:30,CHG\nE039,M5,2026-10-12 00:30,2026-10-12 03:00,CHG\nE062,M04,2026-09-28 08:00,2026-09-28 14:00,HYD\nE057,m07,2026-10-11 02:00,2026-10-11 07:00,HYD\nE019,M-3,2026-10-09 14:45,2026-10-09 15:45,JAM\nE047,M06,2026-10-06 06:00,2026-10-06 12:00,PM\nE010,M04,2026-10-11 05:45,2026-10-11 12:45,PM\nE055,M01,2026-10-21 07:00,2026-10-21 09:30,JAM\nE018,m05,2026-10-03 19:45,2026-10-03 20:15,JAM\nE066,m08,2026-10-12 01:00,2026-10-12 08:00,ELEC\nE016,M-03,2026-10-30 22:00,2026-10-31 03:30,PM\nE005,M04,2026-10-05 00:00,2026-10-05 05:15,PM\nE061,M05,2026-09-30 21:30,2026-10-01 04:00,ELEC\nE032,M04,2026-10-12 10:15,2026-10-12 14:15,CHG\nE036,M02,2026-10-22 05:00,2026-10-22 08:00,CHG\n", "machines.csv": "machine_id,name,line,decommissioned\nM01,Press 1,A,no\nM02,Press 2,A,no\nM03,Press 3,A,no\nM04,Press 4,A,no\nM05,Press 5,B,no\nM06,Press 6,B,no\nM07,Press 7,B,no\nM08,Press 8,B,yes\n"}}, "REF": {"A": "from datetime import datetime\n\ndef parse_date(s):\n    s = (s or \"\").strip()\n    if not s:\n        return None\n    for fmt in (\"%Y-%m-%d\", \"%m/%d/%Y\"):\n        try:\n            return datetime.strptime(s, fmt).date()\n        except ValueError:\n            pass\n    raise ValueError(f\"unknown date format: {s!r}\")\n\ndef on_time_by_carrier(shipments, carriers, start=\"2026-07-01\", end=\"2026-09-30\"):\n    names = {c[\"carrier_code\"].strip().upper(): c[\"carrier_name\"].strip() for c in carriers}\n    lo, hi = parse_date(start), parse_date(end)\n    seen, out = set(), {}\n    for r in shipments:\n        sid = r[\"shipment_id\"].strip()\n        if sid in seen:                      # scanner double-uploads\n            continue\n        seen.add(sid)\n        if r[\"status\"].strip().upper() == \"CANCELLED\":\n            continue\n        promised = parse_date(r[\"promised_date\"])\n        if not (lo <= promised <= hi):       # Q3 by promised date\n            continue\n        delivered = parse_date(r[\"delivered_date\"])\n        on_time = delivered is not None and delivered <= promised   # in transit = late\n        name = names[r[\"carrier_code\"].strip().upper()]\n        s = out.setdefault(name, {\"shipments\": 0, \"on_time\": 0})\n        s[\"shipments\"] += 1\n        s[\"on_time\"] += int(on_time)\n    for s in out.values():\n        s[\"pct\"] = round(100 * s[\"on_time\"] / s[\"shipments\"], 1)\n    return out\n", "B": "import re\n\ndef clean_amount(s):\n    return round(float(str(s).replace(\"$\", \"\").replace(\",\", \"\").strip()), 2)\n\ndef norm_invoice(s):\n    digits = re.sub(r\"\\D\", \"\", s or \"\")       # only the digits matter\n    return digits.lstrip(\"0\") or \"0\"\n\ndef find_duplicates(payments, vendors):\n    tax = {v[\"vendor_id\"].strip(): v[\"tax_id\"].strip() for v in vendors}\n    groups, credits = {}, {}\n    for p in payments:\n        t = tax[p[\"vendor_id\"].strip()]           # same company = same tax ID\n        inv = norm_invoice(p[\"invoice_no\"])\n        amt = clean_amount(p[\"amount\"])\n        if amt < 0:                                # credit memo = refund\n            credits[(t, inv)] = credits.get((t, inv), 0) - amt\n            continue\n        groups.setdefault((t, inv, amt), []).append(p[\"payment_id\"].strip())\n    out = []\n    for (t, inv, amt), ids in groups.items():\n        if len(ids) < 2:\n            continue\n        exposure = round(max(0.0, (len(ids) - 1) * amt - credits.get((t, inv), 0)), 2)\n        if exposure > 0:\n            out.append({\"tax_id\": t, \"invoice\": inv, \"amount\": amt,\n                        \"payment_ids\": sorted(ids), \"exposure\": exposure})\n    out.sort(key=lambda g: -g[\"exposure\"])\n    return out\n", "C": "import re\nfrom datetime import datetime\n\nPLANNED = {\"PM\", \"CHG\"}            # planned maintenance, changeover\n\ndef norm_machine(s):\n    return \"M%02d\" % int(re.sub(r\"\\D\", \"\", s))\n\ndef unplanned_hours(events, machines, month=\"2026-10\"):\n    y, m = map(int, month.split(\"-\"))\n    start = datetime(y, m, 1)\n    end = datetime(y + (m == 12), m % 12 + 1, 1)\n    info = {norm_machine(x[\"machine_id\"]): x for x in machines}\n    intervals = {}\n    for e in events:\n        if e[\"reason_code\"].strip().upper() in PLANNED:\n            continue\n        mid = norm_machine(e[\"machine_id\"])\n        mach = info.get(mid)\n        if mach is None or mach[\"decommissioned\"].strip().lower() in (\"yes\", \"y\", \"true\", \"1\"):\n            continue\n        s = datetime.strptime(e[\"start_ts\"].strip(), \"%Y-%m-%d %H:%M\")\n        f = e[\"end_ts\"].strip()\n        f = datetime.strptime(f, \"%Y-%m-%d %H:%M\") if f else end    # still down\n        s, f = max(s, start), min(f, end)                            # clip to month\n        if f > s:\n            intervals.setdefault(mid, []).append((s, f))\n    out = {}\n    for mid, ivs in intervals.items():                               # merge overlaps\n        ivs.sort()\n        total, (cs, cf) = 0.0, ivs[0]\n        for s, f in ivs[1:]:\n            if s <= cf:\n                cf = max(cf, f)\n            else:\n                total += (cf - cs).total_seconds()\n                cs, cf = s, f\n        total += (cf - cs).total_seconds()\n        out[info[mid][\"name\"].strip()] = round(total / 3600, 2)\n    return out\n"}, "TESTS": {"A": [{"label": "Same-day delivery counts as on time; early is on time", "rule": "On time = delivered on or before the promised date.", "args": ["shipment_id,carrier_code,promised_date,delivered_date,status\nT1,FX,2026-07-10,2026-07-10,DELIVERED\nT2,FX,2026-07-11,2026-07-09,DELIVERED\nT3,FX,2026-07-12,2026-07-13,DELIVERED\n", "carrier_code,carrier_name\nFX,Falcon Express\nRD,Redline Freight\n"]}, {"label": "Cancelled shipments are excluded", "rule": "Cancelled shipments never went out: leave them out entirely.", "args": ["shipment_id,carrier_code,promised_date,delivered_date,status\nT1,FX,2026-08-01,2026-08-01,DELIVERED\nT2,FX,2026-08-02,,CANCELLED\n", "carrier_code,carrier_name\nFX,Falcon Express\nRD,Redline Freight\n"]}, {"label": "In-transit shipments count as late", "rule": "Anything still in transit is already past its promised date: count it late.", "args": ["shipment_id,carrier_code,promised_date,delivered_date,status\nT1,FX,2026-08-01,2026-08-01,DELIVERED\nT2,FX,2026-08-02,,IN_TRANSIT\n", "carrier_code,carrier_name\nFX,Falcon Express\nRD,Redline Freight\n"]}, {"label": "Only Q3 by promised date (Jul 1 to Sep 30, inclusive)", "rule": "Q3 is July 1 to Sept 30 by promised date; ignore June/October leakage.", "args": ["shipment_id,carrier_code,promised_date,delivered_date,status\nT1,FX,2026-06-30,2026-06-30,DELIVERED\nT2,FX,2026-07-01,2026-07-02,DELIVERED\nT3,FX,2026-09-30,2026-09-30,DELIVERED\nT4,FX,2026-10-01,2026-10-01,DELIVERED\n", "carrier_code,carrier_name\nFX,Falcon Express\nRD,Redline Freight\n"]}, {"label": "Duplicate shipment IDs count once", "rule": "The scanners sometimes upload a shipment twice. One ID = one shipment.", "args": ["shipment_id,carrier_code,promised_date,delivered_date,status\nT1,FX,2026-08-01,2026-08-03,DELIVERED\nT1,FX,2026-08-01,2026-08-03,DELIVERED\nT2,FX,2026-08-01,2026-08-01,DELIVERED\n", "carrier_code,carrier_name\nFX,Falcon Express\nRD,Redline Freight\n"]}, {"label": "Messy carrier codes and MM/DD/YYYY dates", "rule": "Codes are hand-typed (lowercase, stray spaces). Old system writes MM/DD/YYYY.", "args": ["shipment_id,carrier_code,promised_date,delivered_date,status\nT1,fx ,07/15/2026,07/14/2026,DELIVERED\nT2, RD,09/30/2026,10/02/2026,DELIVERED\nT3,rd,2026-08-08,08/08/2026,DELIVERED\n", "carrier_code,carrier_name\nFX,Falcon Express\nRD,Redline Freight\n"]}, {"label": "Full Q3 export", "rule": "All rules together on the real files.", "args": ["@shipments.csv", "@carriers.csv"]}], "B": [{"label": "Same vendor, invoice and amount twice = one duplicate group", "rule": "A duplicate is the same vendor paying the same invoice number for the same amount more than once.", "args": ["payment_id,vendor_id,invoice_no,amount,paid_date\nP1,V3,5001,100.00,2026-01-02\nP2,V3,5001,100.00,2026-01-09\nP3,V3,5002,100.00,2026-01-09\n", "vendor_id,vendor_name,tax_id\nV1,Acme,11-1\nV2,ACME INC,11-1\nV3,Other Co,22-2\n"]}, {"label": "Invoice formats: only the digits matter", "rule": "'INV-00123', 'inv 123' and '123' are the same invoice.", "args": ["payment_id,vendor_id,invoice_no,amount,paid_date\nP1,V3,INV-00123,50.00,2026-01-02\nP2,V3,inv 123,50.00,2026-01-09\nP3,V3,000123,50.00,2026-02-01\n", "vendor_id,vendor_name,tax_id\nV1,Acme,11-1\nV2,ACME INC,11-1\nV3,Other Co,22-2\n"]}, {"label": "Different vendor IDs with the same tax ID are one vendor", "rule": "Vendor master has duplicates; tax ID identifies the company.", "args": ["payment_id,vendor_id,invoice_no,amount,paid_date\nP1,V1,777,250.00,2026-01-02\nP2,V2,777,250.00,2026-01-09\n", "vendor_id,vendor_name,tax_id\nV1,Acme,11-1\nV2,ACME INC,11-1\nV3,Other Co,22-2\n"]}, {"label": "Amounts with $ and commas", "rule": "The export adds dollar signs and commas to some amounts.", "args": ["payment_id,vendor_id,invoice_no,amount,paid_date\nP1,V3,9,\"$1,250.00\",2026-01-02\nP2,V3,9,1250.00,2026-01-09\n", "vendor_id,vendor_name,tax_id\nV1,Acme,11-1\nV2,ACME INC,11-1\nV3,Other Co,22-2\n"]}, {"label": "Different amounts are not duplicates", "rule": "Different amount = corrected invoice, not a duplicate.", "args": ["payment_id,vendor_id,invoice_no,amount,paid_date\nP1,V3,44,410.00,2026-01-02\nP2,V3,44,401.00,2026-01-09\nP3,V3,55,20.00,2026-01-02\nP4,V3,55,20.00,2026-01-05\n", "vendor_id,vendor_name,tax_id\nV1,Acme,11-1\nV2,ACME INC,11-1\nV3,Other Co,22-2\n"]}, {"label": "Credit memos reduce exposure; fully refunded groups drop off", "rule": "Negative lines are refunds. Exposure = overpaid minus credited back; leave fully refunded groups off.", "args": ["payment_id,vendor_id,invoice_no,amount,paid_date\nP1,V3,10,300.00,2026-01-02\nP2,V3,10,300.00,2026-01-09\nP3,V3,10,-300.00,2026-02-01\nP4,V3,11,80.00,2026-01-02\nP5,V3,11,80.00,2026-01-03\nP6,V3,11,80.00,2026-01-04\nP7,V3,11,-80.00,2026-02-01\n", "vendor_id,vendor_name,tax_id\nV1,Acme,11-1\nV2,ACME INC,11-1\nV3,Other Co,22-2\n"]}, {"label": "Full FY26 payments file", "rule": "All rules together on the real files.", "args": ["@payments.csv", "@vendors.csv"]}], "C": [{"label": "Planned codes (PM, CHG) are excluded; MAT counts", "rule": "PM and CHG are planned. Everything else is unplanned, including MAT.", "args": ["event_id,machine_id,start_ts,end_ts,reason_code\nE1,M01,2026-10-02 08:00,2026-10-02 10:00,JAM\nE2,M01,2026-10-03 08:00,2026-10-03 14:00,PM\nE3,M01,2026-10-04 08:00,2026-10-04 09:30,CHG\nE4,M01,2026-10-05 08:00,2026-10-05 09:00,MAT\n", "machine_id,name,line,decommissioned\nM01,Press 1,A,no\nM02,Press 2,A,no\nM08,Press 8,B,yes\n"]}, {"label": "Machine ID spellings map to one press", "rule": "M-01, M1 and m01 are the same press.", "args": ["event_id,machine_id,start_ts,end_ts,reason_code\nE1,M-01,2026-10-02 08:00,2026-10-02 09:00,JAM\nE2,M1,2026-10-03 08:00,2026-10-03 09:00,JAM\nE3,m01,2026-10-04 08:00,2026-10-04 09:00,JAM\n", "machine_id,name,line,decommissioned\nM01,Press 1,A,no\nM02,Press 2,A,no\nM08,Press 8,B,yes\n"]}, {"label": "Clip to the month", "rule": "Only count October hours, even if a stoppage started Sept 30 or ran into November.", "args": ["event_id,machine_id,start_ts,end_ts,reason_code\nE1,M01,2026-09-30 22:00,2026-10-01 03:00,ELEC\nE2,M02,2026-10-31 20:00,2026-11-01 06:00,ELEC\nE3,M02,2026-09-15 08:00,2026-09-15 10:00,JAM\n", "machine_id,name,line,decommissioned\nM01,Press 1,A,no\nM02,Press 2,A,no\nM08,Press 8,B,yes\n"]}, {"label": "Blank end time runs to end of month", "rule": "Blank end = still down; count through end of October.", "args": ["event_id,machine_id,start_ts,end_ts,reason_code\nE1,M01,2026-10-31 12:00,,HYD\n", "machine_id,name,line,decommissioned\nM01,Press 1,A,no\nM02,Press 2,A,no\nM08,Press 8,B,yes\n"]}, {"label": "Overlapping logs are not double counted", "rule": "PLC and operator both log; don't count the same hour twice for a machine.", "args": ["event_id,machine_id,start_ts,end_ts,reason_code\nE1,M01,2026-10-02 08:00,2026-10-02 11:00,HYD\nE2,M01,2026-10-02 08:10,2026-10-02 11:30,HYD\nE3,M01,2026-10-02 13:00,2026-10-02 14:00,JAM\n", "machine_id,name,line,decommissioned\nM01,Press 1,A,no\nM02,Press 2,A,no\nM08,Press 8,B,yes\n"]}, {"label": "Decommissioned presses are ignored", "rule": "Press 8 was pulled in September; ignore anything logged against it.", "args": ["event_id,machine_id,start_ts,end_ts,reason_code\nE1,M08,2026-10-02 08:00,2026-10-02 18:00,ELEC\nE2,M02,2026-10-02 08:00,2026-10-02 09:00,JAM\n", "machine_id,name,line,decommissioned\nM01,Press 1,A,no\nM02,Press 2,A,no\nM08,Press 8,B,yes\n"]}, {"label": "Full October event log", "rule": "All rules together on the real files.", "args": ["@downtime_events.csv", "@machines.csv"]}]}, "COUNTS": {"A": [{"q": "How many data rows are in shipments.csv (not counting the header)?", "a": 82}, {"q": "How many unique shipment IDs are there?", "a": 76}, {"q": "How many distinct carrier_code values appear exactly as written (spaces and case included)?", "a": 11}, {"q": "Among unique shipments, how many are CANCELLED?", "a": 3}], "B": [{"q": "How many data rows are in payments.csv?", "a": 71}, {"q": "How many distinct tax IDs are in vendors.csv (there are 8 vendor IDs)?", "a": 6}, {"q": "How many payment rows have a negative amount (credit memos)?", "a": 3}, {"q": "How many payment rows have an amount containing a $ or a comma?", "a": 26}], "C": [{"q": "How many data rows are in downtime_events.csv?", "a": 67}, {"q": "How many events have a blank end_ts?", "a": 1}, {"q": "How many distinct machine_id spellings appear exactly as written?", "a": 33}, {"q": "How many events have a planned reason code (PM or CHG)?", "a": 23}]}}</script>
+<script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+<script>
+{
+const GEN = JSON.parse(document.getElementById('gen').textContent);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ------------------------------------------------------------ case content */
+const CASES = {
+A: {
+  title: 'Northline Logistics', topic: 'Carrier on-time rates', level: 'Warm-up',
+  client: 'Maria Okafor', role: 'Director of Operations', init: 'MO', fn: 'on_time_by_carrier',
+  brief: "Our four carriers all report 95%+ on-time delivery for Q3. My team doesn't believe it. I start contract renegotiations next week and need the real on-time numbers for each carrier. Attached: the Q3 shipment export from dispatch, and our carrier list.",
+  facts: [
+    {id:'ontime', c:1, k:['on time','on-time','ontime','late','definition','define','counts as','same day','same-day','promised'], a:"On time means delivered on or before the promised date. Same-day counts as on time. Early is fine too."},
+    {id:'cancel', c:1, k:['cancel'], a:"Cancelled shipments never went out. Leave them out entirely."},
+    {id:'transit', c:1, k:['transit','not delivered','undelivered','no deliver','blank','empty','missing','still','open','pending','in progress'], a:"Anything still in transit is already past its promised date. Count it as late; that's the point."},
+    {id:'window', c:1, k:['q3','quarter','date range','period','window','which dates','july','september','june','october','timeframe','time frame','date filter'], a:"Q3 is July 1 to September 30, by promised date. Some June and October rows leaked into the export; ignore those."},
+    {id:'dupes', c:1, k:['duplicate','dupe','twice','repeat','same id','same shipment','unique','double'], a:"Yes, the handheld scanners sometimes upload a shipment twice. One shipment ID is one shipment."},
+    {id:'codes', c:1, k:['carrier code','codes','lowercase','upper','case','spaces','whitespace','typo','mapping','carrier name','names','official'], a:"Dispatchers type the carrier codes in by hand, so expect lowercase and stray spaces. carriers.csv has the official names; use those in the report."},
+    {id:'dates', c:0, k:['format','mm/dd','slash','parse','date column','dates look'], a:"The old dispatch system writes MM/DD/YYYY and the new one writes YYYY-MM-DD. Both are US dates."},
+    {id:'output', c:0, k:['output','deliverable','report','table','excel','spreadsheet','audience','who will','who is','email','look like','present','decimal'], a:"A small table: carrier, number of shipments, number on time, percent on time to one decimal. I'm pasting it into an email to our VP of Procurement."},
+    {id:'goal', c:0, k:['why','goal','decision','renegotia','contract','sla','target','threshold','leverage','use this','trying to'], a:"Our contracts promise 92% on time. If anyone is below that, it's a breach and I have leverage."},
+    {id:'deadline', c:0, k:['when','deadline','timeline','need it by','due','how soon','thursday','monday'], a:"Talks start Monday. Thursday would give me time to prep."},
+    {id:'recur', c:0, k:['again','every','recurring','monthly','automate','refresh','ongoing','repeat this'], a:"If this works I'd love it every month, but today I just need Q3."}
+  ],
+  plan: [['Dedupe shipment IDs', /dup|unique|twice|distinct/i], ['Exclude cancelled', /cancel/i], ['In transit = late', /transit/i], ['Q3 window by promised date', /q3|jul|sep|window|quarter/i], ['Parse both date formats', /format|mm\/dd|parse|yyyy/i], ['Clean carrier codes and map names', /code|trim|strip|upper|normali|map|clean/i], ['92% SLA flag or business goal', /92|sla|target|contract|renegotia/i]],
+  modelPlan: `Goal: real Q3 on-time % per carrier, flagged against the 92% SLA, for Monday's contract talks.
+Inputs: shipments.csv (82 rows, 76 unique IDs), carriers.csv (4 carriers).
+Steps:
+ 1. Drop repeat shipment IDs (scanner double uploads).
+ 2. Clean carrier codes (trim, uppercase) and map them to official names.
+ 3. Parse both date formats (YYYY-MM-DD and MM/DD/YYYY).
+ 4. Keep promised dates from Jul 1 to Sep 30; drop cancelled shipments.
+ 5. On time = delivered on or before promised; in transit = late.
+ 6. Per carrier: shipments, on time, % to 1 dp; flag anything under 92%.
+Checks: every code maps to a carrier; per-carrier counts add up to the filtered total; hand-check 3 rows.
+Assumptions: repeated IDs are exact copies (keep the first); Q3 is decided by promised date.
+Output: a 4-row table Maria can paste into an email.`,
+  modelNote: `Hi Maria,
+
+By Thursday I'll send you a short table of Q3 on-time rates for each of your four carriers: shipments, on time, and percent, with anyone under your 92% target flagged.
+
+Rules I'm using, from our call: on time means delivered on or before the promised date; cancelled shipments are left out; anything still in transit counts as late; a shipment scanned twice counts once.
+
+One thing to confirm: I'm using the promised date to decide what's in Q3. Tell me if you'd rather use the ship date.
+
+Don`,
+  spec: `on_time_by_carrier(shipments, carriers) -> dict
+
+shipments, carriers: lists of dicts (rows from csv.DictReader; use rows("shipments.csv")).
+Return {carrier_name: {"shipments": n, "on_time": k, "pct": float}}
+  pct = round(100 * on_time / shipments, 1)
+
+Rules from the client:
+  - One shipment ID = one shipment (drop repeats, keep the first).
+  - Leave out CANCELLED shipments.
+  - Q3 only: promised_date between 2026-07-01 and 2026-09-30, inclusive.
+  - On time = delivered_date on or before promised_date.
+  - In transit (blank delivered_date) = late.
+  - carrier_code is hand-typed: trim it, uppercase it, then map it to carrier_name.
+  - Dates are YYYY-MM-DD or MM/DD/YYYY.`,
+  starter: `from datetime import datetime
+
+def on_time_by_carrier(shipments, carriers):
+    """shipments, carriers: lists of dicts from csv.DictReader.
+    Return {carrier_name: {"shipments": n, "on_time": k, "pct": float}}"""
+    # TODO
+    return {}
+
+print(on_time_by_carrier(rows("shipments.csv"), rows("carriers.csv")))
+`,
+  hints: [
+    "Break it into pieces: a parse_date() helper that tries both formats, a set of seen IDs for the duplicates, a filter, then a dict of counters per carrier name. Write and test parse_date first, on '07/15/2026' and '2026-07-15'.",
+    "for each row: skip if ID already seen → skip if CANCELLED → promised = parse(promised_date); skip if outside Jul 1 to Sep 30 → delivered = parse(delivered_date) or None → on_time = delivered is not None and delivered <= promised → name = names[code.strip().upper()] → bump counters. At the end, add pct to each carrier.",
+    `def parse_date(s):
+    s = (s or "").strip()
+    if not s:
+        return None
+    for fmt in ("%Y-%m-%d", "%m/%d/%Y"):
+        try:
+            return datetime.strptime(s, fmt).date()
+        except ValueError:
+            pass
+    raise ValueError(s)`
+  ]
+},
+B: {
+  title: 'Calloway Health Group', topic: 'Duplicate vendor payments', level: 'Medium',
+  client: 'Priya Raman', role: 'Accounts Payable Manager', init: 'PR', fn: 'find_duplicates',
+  brief: "Our auditors think we may have paid some vendor invoices twice this year. I need to know which ones, and how much money is actually at stake, so I can decide whether to hire a recovery firm. Attached: our FY26 payments export and the vendor master.",
+  facts: [
+    {id:'def', c:1, k:['what counts','define','definition','duplicate','paid twice','same invoice','criteria','considered'], a:"A duplicate is the same vendor paying the same invoice number, for the same amount, more than once."},
+    {id:'vendor', c:1, k:['vendor id','vendor master','same vendor','same company','two ids','tax','entity','parent','vendor name','set up twice','different id'], a:"Our vendor master is a mess. Some vendors were set up twice under different IDs. The tax ID is the reliable way to tell it's the same company."},
+    {id:'inv', c:1, k:['invoice number','invoice no','invoice format','prefix','leading zero','inv-','formatting','typed','hand','inconsistent'], a:"Clerks type invoice numbers by hand. 'INV-00123', 'inv 123' and '123' are all the same invoice. Only the digits matter."},
+    {id:'amt', c:1, k:['different amount','amount differ','amounts differ','close','cents','partial','slightly','rounding','same amount'], a:"If the amounts differ, it isn't a duplicate for this exercise. It's usually a corrected invoice."},
+    {id:'credit', c:1, k:['credit','negative','refund','memo','reversal','recovered','clawback','returned','minus'], a:"Negative lines are credit memos: the vendor refunded us. If a duplicate has already been refunded, that money isn't at stake anymore."},
+    {id:'stake', c:1, k:['at stake','exposure','how much','money','total','recover','dollar','overpa','sum','impact'], a:"I want what we overpaid. If we paid an invoice three times, two of those are overpayments. Subtract anything already credited back. Anything fully refunded can come off the list."},
+    {id:'fmt', c:0, k:['$','comma','currency','dollar sign','text','string','numeric','format of the amount'], a:"The export puts dollar signs and commas on some amounts. Sorry about that."},
+    {id:'recur', c:0, k:['recurring','monthly','subscription','waste','summit','regular'], a:"Summit Waste bills us the same amount every month. Those have different invoice numbers, so they're fine."},
+    {id:'window', c:0, k:['date','period','window','year','range','how far','time limit','days apart'], a:"Use everything in the file, which is fiscal 2026 to date. There's no time limit for duplicates."},
+    {id:'output', c:0, k:['output','deliverable','report','list','format','audience','who will','who is','look like','cfo'], a:"A list of duplicate groups with the payment IDs, so my team can request refunds, plus one total for the CFO."},
+    {id:'goal', c:0, k:['why','goal','decision','recovery firm','auditor','trying to','threshold','worth'], a:"Audit flagged it. I need to know whether it's $500 or $500,000. Recovery firms take a cut, so it only makes sense if the number is big."},
+    {id:'deadline', c:0, k:['when','deadline','timeline','need it by','due','how soon'], a:"Before the audit committee meets on Friday."}
+  ],
+  plan: [['Same company via tax ID', /tax/i], ['Normalize invoice numbers (digits only)', /digit|invoice|prefix|leading zero|normali/i], ['Clean $ and commas from amounts', /\$|comma|currency|clean|amount/i], ['Same amount required', /same amount|amount differ|exact amount|match.*amount/i], ['Credit memos / refunds', /credit|refund|negative|memo/i], ['Exposure = extra payments minus credits', /exposure|overpa|at stake|count\s*-\s*1|n\s*-\s*1|extra/i], ['Business goal (recovery firm decision)', /recovery|firm|cfo|audit|decide/i]],
+  modelPlan: `Goal: list the invoices we paid more than once and the dollars still at stake, so Priya can decide on a recovery firm before Friday.
+Inputs: payments.csv (71 rows), vendors.csv (8 vendor IDs, but only 6 tax IDs).
+Steps:
+ 1. Map vendor_id to tax_id, so a company set up twice counts as one vendor.
+ 2. Reduce invoice numbers to their digits, without leading zeros (INV-00123 = 123).
+ 3. Clean amounts: strip $ and commas, convert to numbers.
+ 4. Set aside negative lines as credit memos, keyed by tax ID + invoice.
+ 5. Group the rest by tax ID + invoice + exact amount; any group with 2+ payments is a duplicate.
+ 6. Exposure = (payments - 1) x amount, minus credits for that invoice; drop groups at 0.
+Checks: hand-trace one group in each pattern; the recurring Summit Waste bills must not show up; the total is the sum of the groups.
+Assumptions: different amount = correction, not a duplicate; no time window.
+Output: list of groups with payment IDs, sorted by exposure, plus one total.`,
+  modelNote: `Hi Priya,
+
+By Thursday you'll have a list of every invoice we appear to have paid more than once, with the payment IDs your team needs for refund requests, and one dollar total for the CFO.
+
+How I'm counting it, from our call: the same company (matched on tax ID, since some vendors were set up twice), the same invoice number (ignoring prefixes and leading zeros), and the same amount. The total counts only the extra payments, minus any refunds already received.
+
+To confirm: payments for the same invoice with different amounts are being treated as corrections, not duplicates. Let me know if you want those listed separately.
+
+Don`,
+  spec: `find_duplicates(payments, vendors) -> list of dicts
+
+Each group: {"tax_id": str, "invoice": str (digits, no leading zeros),
+             "amount": float, "payment_ids": sorted list, "exposure": float}
+Sort by exposure, highest first. (Tests ignore the order.)
+
+Rules from the client:
+  - Same company = same tax_id (map vendor_id -> tax_id via vendors).
+  - Invoice: keep only the digits, then strip leading zeros ("INV-00123" -> "123").
+  - Amounts may contain "$" and ",". Round to 2 dp.
+  - Duplicate group = same tax_id + invoice + amount, 2+ payments.
+  - Negative amounts are credit memos, not payments. Sum them by tax_id + invoice.
+  - exposure = (len(payment_ids) - 1) * amount - credits for that tax_id + invoice, floored at 0.
+  - Leave out groups whose exposure is 0 (already refunded).`,
+  starter: `import re
+
+def find_duplicates(payments, vendors):
+    """payments, vendors: lists of dicts from csv.DictReader.
+    Return a list of duplicate groups (see spec)."""
+    # TODO
+    return []
+
+groups = find_duplicates(rows("payments.csv"), rows("vendors.csv"))
+for g in groups:
+    print(g)
+print("Total at stake:", round(sum(g["exposure"] for g in groups), 2))
+`,
+  hints: [
+    "Two passes. Pass 1: walk the payments, compute (tax_id, invoice, amount) for each one, and send negative amounts to a credits dict instead of the groups dict. Pass 2: for each group with 2+ IDs, compute exposure and keep it if it's > 0.",
+    "tax = {v['vendor_id'].strip(): v['tax_id'].strip() for v in vendors} → inv = re.sub(r'\\D', '', s).lstrip('0') or '0' → amt = float(s.replace('$','').replace(',','')) → if amt < 0: credits[(t, inv)] += -amt → else groups[(t, inv, amt)].append(payment_id)",
+    `def clean_amount(s):
+    return round(float(str(s).replace("$", "").replace(",", "").strip()), 2)
+
+def norm_invoice(s):
+    return re.sub(r"\\D", "", s or "").lstrip("0") or "0"`
+  ]
+},
+C: {
+  title: 'Ridgeway Plastics', topic: 'Unplanned press downtime', level: 'Hard',
+  client: 'Dale Brennan', role: 'Plant Manager', init: 'DB', fn: 'unplanned_hours',
+  brief: "Unplanned downtime is killing our output. I have budget to overhaul two or three presses this quarter. Tell me which presses lost the most hours to unplanned downtime last month. Attached: the October downtime log from our MES, and the machine list.",
+  facts: [
+    {id:'planned', c:1, k:['planned','unplanned','reason','code','pm','maintenance','changeover','chg','mat','material','which events','what counts'], a:"PM is planned maintenance and CHG is changeover; those are planned. Everything else is unplanned, including MAT. Material shortages are still on us."},
+    {id:'month', c:1, k:['month','october','boundary','cross','span','overnight','period','window','last month','september','november','midnight','start date'], a:"Last month means October. If a stoppage started September 30 and ran into October, only count the October hours. Same at the other end."},
+    {id:'open', c:1, k:['open','blank','missing end','still down','ongoing','no end','end time','end_ts','empty','not closed','unfinished'], a:"A blank end time means it's still down, or nobody closed the ticket. Count it through the end of October."},
+    {id:'overlap', c:1, k:['overlap','duplicate','double','twice','same stoppage','two logs','plc','operator','sensor','both log','same time'], a:"The line PLC and the operator both log stoppages, so the same stoppage can show up twice with slightly different times. Don't count the same hour twice for a machine."},
+    {id:'ids', c:1, k:['machine id','id format','m-','naming','spelling','inconsistent','machine_id','ids look','match the machine'], a:"M-03, M3 and m03 are all the same press. Different systems, different habits."},
+    {id:'decom', c:1, k:['decommission','retired','press 8','m08','removed','inactive','old machine','still running','all machines'], a:"Press 8 was pulled out in mid-September. Ignore anything logged against it; that's a sensor that was never unplugged."},
+    {id:'output', c:0, k:['output','deliverable','report','format','top','rank','audience','who will','who is','how many','decimal','look like','meeting'], a:"Give me every press ranked, but the top 3 is what matters. Hours to two decimals. I'm showing it at Monday's ops meeting."},
+    {id:'tz', c:0, k:['timezone','time zone','utc','local','dst','daylight'], a:"Everything's plant local time. No clock change in October."},
+    {id:'goal', c:0, k:['why','goal','decision','budget','overhaul','trying to','use this'], a:"I can overhaul two, maybe three presses this quarter. I want to spend the money where the unplanned hours are."},
+    {id:'deadline', c:0, k:['when','deadline','timeline','need it by','due','how soon'], a:"Monday morning, before the ops meeting."}
+  ],
+  plan: [['Exclude planned codes (PM, CHG)', /pm|chg|planned|changeover/i], ['Clip to October', /clip|october|boundary|month|sep|nov/i], ['Blank end = through end of month', /blank|open|still down|end of (the )?month|missing end/i], ['Merge overlapping logs', /overlap|merge|double|union/i], ['Normalize machine IDs', /id|m-|normali|spelling/i], ['Drop decommissioned press', /decommission|press 8|m08|retired/i], ['Business goal (overhaul 2 to 3 presses)', /overhaul|budget|top ?3|rank/i]],
+  modelPlan: `Goal: rank presses by unplanned downtime hours in October, so Dale can pick 2 or 3 to overhaul.
+Inputs: downtime_events.csv (67 rows, 33 spellings of machine IDs), machines.csv (8 presses, Press 8 decommissioned).
+Steps:
+ 1. Normalize machine IDs to M01..M08; drop the decommissioned press.
+ 2. Drop planned codes (PM, CHG); keep everything else, including MAT.
+ 3. Parse timestamps; a blank end means "through Nov 1, 00:00".
+ 4. Clip each event to Oct 1 to Nov 1.
+ 5. Per machine, sort the intervals and merge overlaps (PLC + operator double logs).
+ 6. Sum the merged hours, round to 2 dp, and rank.
+Checks: the one open event is the biggest single number, so confirm it with Dale; hand-check one merged pair; a naive sum would give a different top 3.
+Assumptions: open events really are still down; plant local time.
+Output: a ranked table, with the top 3 called out for Monday.`,
+  modelNote: `Hi Dale,
+
+You'll have a ranked list of presses by unplanned downtime hours in October before Monday's ops meeting, with the top 3 called out.
+
+Rules I'm using, from our call: planned maintenance and changeovers don't count; material shortages do; only October hours count; a stoppage logged by both the PLC and an operator counts once; Press 8 is excluded.
+
+One thing to check: Press 3 has a stoppage from October 30 with no end time. I'm counting it as down through the end of the month, which makes it a big number. Can you confirm it's really still down?
+
+Don`,
+  spec: `unplanned_hours(events, machines, month="2026-10") -> dict
+
+Return {press_name: hours} for presses with unplanned downtime, hours = round(x, 2).
+
+Rules from the client:
+  - Planned codes PM and CHG don't count. Everything else (JAM, ELEC, HYD, MAT) does.
+  - machine_id spellings vary: "M-03", "M3", "m03" -> "M03". Map to machines.name.
+  - Skip machines with decommissioned == "yes".
+  - Timestamps look like "YYYY-MM-DD HH:MM". A blank end_ts = still down: run it to the end of the month.
+  - Clip every event to [first of month, first of next month).
+  - Per machine, merge overlapping intervals before summing (PLC + operator double logs).`,
+  starter: `import re
+from datetime import datetime
+
+def unplanned_hours(events, machines, month="2026-10"):
+    """events, machines: lists of dicts from csv.DictReader.
+    Return {press_name: unplanned_hours_rounded_2dp}"""
+    # TODO
+    return {}
+
+result = unplanned_hours(rows("downtime_events.csv"), rows("machines.csv"))
+for name, h in sorted(result.items(), key=lambda kv: -kv[1]):
+    print(f"{name:10} {h:7.2f}")
+`,
+  hints: [
+    "Collect intervals first, then merge. Step 1: for each kept event, build (start, end) clipped to the month and append it to intervals[machine]. Step 2: per machine, sort the intervals and sweep: if the next start is at or before the current end, extend the end; otherwise close out the current interval and add its length.",
+    "norm = 'M%02d' % int(re.sub(r'\\D','', mid)) → skip PM/CHG → skip decommissioned → s = max(start, month_start); f = min(end or month_end, month_end) → if f > s: intervals[mid].append((s, f)) → merge → hours = seconds / 3600",
+    `ivs.sort()
+total, (cs, cf) = 0.0, ivs[0]
+for s, f in ivs[1:]:
+    if s <= cf:
+        cf = max(cf, f)
+    else:
+        total += (cf - cs).total_seconds()
+        cs, cf = s, f
+total += (cf - cs).total_seconds()`
+  ]
+}
+};
+const NOTE_JARGON = ['dataframe','pandas','regex','dedup','normaliz','schema','null','nan','parse','python','script','groupby','join','dict','function','csv.dictreader','etl','pipeline'];
+const STEPS = [['brief','Brief & files',1],['ask','Ask the client',1],['count','Read & count',1],['plan','Plan',1],['note','Client note',1],['build','Build',2],['review','Review',0]];
+
+/* ------------------------------------------------------------ state */
+const KEY = 'fde-drill-v1';
+let S;
+function fresh(caseId, mode){
+  return {view:'case', caseId, mode, step: mode==='mock' ? 'start' : 'brief', chat:[], asked:[], counts:{}, countChecked:false,
+    plan:'', note:'', planChecked:false, noteChecked:false, code: CASES[caseId].starter, tests:null, testedCode:null,
+    hintsShown:0, file:Object.keys(GEN.FILES[caseId])[0], scratch:'# The "AI assistant" bench: files are in the working folder.\n# rows(name) -> list of dicts. pandas works too: pd.read_csv("...")\nr = rows("'+Object.keys(GEN.FILES[caseId])[0]+'")\nprint(len(r), "rows")\nprint(r[0])\n',
+    scratchOut:'', buildOut:'', p1Start:null, p2Start:null, phase:0, finished:false, saved:false};
+}
+function load(){ try{ const s = JSON.parse(localStorage.getItem(KEY)||'null'); if(s && s.cur && CASES[s.cur.caseId]) return s; }catch(e){} return null; }
+let STORE = load() || {cur: fresh('A','drill'), history: []};
+S = STORE.cur;
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(STORE)); }catch(e){} }
+const C = () => CASES[S.caseId];
+
+/* ------------------------------------------------------------ python */
+let py = null, pyReady = null;
+const HARNESS = `
+import csv, io, json, contextlib, traceback, os
+def _rows(t): return list(csv.DictReader(io.StringIO(t)))
+def _norm(case, v):
+    if case == "B":
+        return sorted((str(g["tax_id"]).strip(), str(g["invoice"]).strip(), round(float(g["amount"]), 2),
+                       tuple(sorted(str(x) for x in g["payment_ids"])), round(float(g["exposure"]), 2)) for g in v)
+    return v
+def _same(case, a, b):
+    try:
+        if case == "C":
+            return isinstance(a, dict) and set(a) == set(b) and all(abs(float(a[k]) - b[k]) <= 0.011 for k in b)
+        return _norm(case, a) == _norm(case, b)
+    except Exception:
+        return False
+def _grade(case, fn, user_src, ref_src, tests_json, folder):
+    tests = json.loads(tests_json)
+    os.chdir(folder)
+    def rows(n):
+        with open(n, newline="") as f:
+            return list(csv.DictReader(f))
+    ref = {}; exec(ref_src, ref)
+    user = {"rows": rows, "__name__": "__test__"}
+    buf = io.StringIO()
+    try:
+        with contextlib.redirect_stdout(buf):
+            exec(user_src, user)
+    except Exception:
+        return json.dumps({"error": traceback.format_exc(limit=3)})
+    if fn not in user:
+        return json.dumps({"error": "No function named " + fn + "() was defined."})
+    res = []
+    for t in tests:
+        args = [rows(a[1:]) if a.startswith("@") else _rows(a) for a in t["args"]]
+        exp = ref[fn](*[[dict(r) for r in a] for a in args])
+        err = None
+        try:
+            with contextlib.redirect_stdout(buf):
+                got = user[fn](*[[dict(r) for r in a] for a in args])
+            ok = _same(case, got, exp)
+        except Exception as e:
+            got, ok, err = None, False, type(e).__name__ + ": " + str(e)
+        res.append({"ok": bool(ok), "got": repr(got)[:700], "exp": repr(exp)[:700], "err": err})
+    return json.dumps({"results": res})
+def _setup_ns(ns, folder):
+    os.chdir(folder)
+    def rows(n):
+        with open(n, newline="") as f:
+            return list(csv.DictReader(f))
+    ns["rows"] = rows
+`;
+function setPy(t){ const el = document.getElementById('pystat'); if(el) el.innerHTML = 'Python: <b>'+esc(t)+'</b>'; }
+function initPy(){
+  if(pyReady) return pyReady;
+  pyReady = (async () => {
+    if(typeof loadPyodide !== 'function') throw new Error('Pyodide script did not load');
+    py = await loadPyodide();
+    for(const [cid, files] of Object.entries(GEN.FILES)){
+      py.FS.mkdirTree('/data/'+cid);
+      for(const [n, t] of Object.entries(files)) py.FS.writeFile('/data/'+cid+'/'+n, t);
+    }
+    py.runPython(HARNESS);
+    setPy('ready');
+    return py;
+  })().catch(e => { setPy('failed to load'); pyReady = null; throw e; });
+  return pyReady;
+}
+const nsCache = {};
+async function runIn(code, nsKey, freshNs){
+  await initPy();
+  let ns = nsCache[nsKey];
+  if(!ns || freshNs){ ns = py.globals.get('dict')(); nsCache[nsKey] = ns; py.globals.get('_setup_ns')(ns, '/data/'+S.caseId); }
+  else py.runPython(`import os; os.chdir("/data/${S.caseId}")`);
+  let out = '';
+  py.setStdout({batched: s => out += s + '\n'}); py.setStderr({batched: s => out += s + '\n'});
+  try{
+    await py.loadPackagesFromImports(code);
+    const r = await py.runPythonAsync(code, {globals: ns});
+    if(r !== undefined && r !== null && !out) out = String(r);
+    return {out, err:false};
+  }catch(e){ return {out: out + String(e.message || e).split('\n').filter(l => !l.includes('/lib/python')).slice(-8).join('\n'), err:true}; }
+}
+async function grade(){
+  await initPy();
+  const c = C();
+  await py.loadPackagesFromImports(S.code);
+  const r = py.globals.get('_grade')(S.caseId, c.fn, S.code, GEN.REF[S.caseId], JSON.stringify(GEN.TESTS[S.caseId]), '/data/'+S.caseId);
+  return JSON.parse(r);
+}
+
+/* ------------------------------------------------------------ client chat */
+function askClient(q){
+  const t = ' ' + q.toLowerCase() + ' ';
+  const scored = C().facts.map(f => ({f, s: f.k.reduce((a,k) => a + (t.includes(k) ? k.length : 0), 0)})).filter(x => x.s > 0).sort((a,b) => b.s - a.s);
+  let ans;
+  if(!scored.length){
+    ans = /\?|^\s*(how|what|which|who|when|why|do|does|is|are|can|should)\b/i.test(q)
+      ? "Hmm, I don't have a strong view on that. Use your judgment and tell me what you assumed."
+      : "Sure. What do you need to know from me?";
+  } else {
+    const picks = [scored[0]];
+    if(scored[1] && scored[1].s >= 4 && scored[1].f.id !== scored[0].f.id) picks.push(scored[1]);
+    picks.forEach(p => { if(!S.asked.includes(p.f.id)) S.asked.push(p.f.id); });
+    ans = picks.map(p => p.f.a).join(' Also: ');
+  }
+  S.chat.push({me:q}, {cl:ans});
+}
+
+/* ------------------------------------------------------------ rubrics */
+const GENERIC_PLAN = [['States the goal / decision', /goal|decision|so that|need|purpose/i], ['Names inputs', /\.csv|input|file|export/i], ['Has validation checks', /check|verify|validat|reconcil|sanity|test|spot/i], ['Lists assumptions or open questions', /assum|open question|confirm|unclear|tbd|\?/i], ['Defines the output', /output|table|deliver|report|list|rank/i]];
+function planRubric(text){ return [...GENERIC_PLAN, ...C().plan].map(([l, re]) => ({l, ok: re.test(text)})); }
+function noteRubric(text){
+  const words = (text.trim().match(/\S+/g) || []).length, low = text.toLowerCase();
+  const jar = NOTE_JARGON.filter(j => low.includes(j));
+  return [
+    {l:'Short: under 170 words (' + words + ')', ok: words > 25 && words <= 170},
+    {l:'Says what they will get', ok: /you'?ll (get|have|receive)|i'?ll send|will send|send you|table|list|ranked|report/i.test(text)},
+    {l:'Says when', ok: /today|tomorrow|monday|tuesday|wednesday|thursday|friday|by |eod|end of day|hours?/i.test(text)},
+    {l:'Plays back the rules you agreed', ok: /rule|count|exclud|left out|leave out|don'?t count|same|on time|only/i.test(text)},
+    {l:'Asks to confirm an assumption', ok: /confirm|correct me|let me know|tell me if|check|assum/i.test(text)},
+    {l: jar.length ? 'Plain language: avoid ' + jar.map(j => '"' + j + '"').join(', ') : 'Plain language: no tech jargon', ok: !jar.length}
+  ];
+}
+const pct = (a, b) => b ? Math.round(100 * a / b) : 0;
+
+/* ------------------------------------------------------------ views */
+const app = document.getElementById('app');
+function fmtTime(s){ s = Math.max(0, Math.round(s)); return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0'); }
+function stepAllowed(id){
+  if(S.mode !== 'mock') return true;
+  if(S.phase === 0) return false;
+  if(S.phase === 1) return STEPS.find(s => s[0] === id)[2] === 1;
+  if(S.phase === 2) return id === 'build' || id === 'review' && false;
+  return true;
+}
+function rail(){
+  let h = '<nav class="rail" aria-label="Steps"><span class="part">Part 1 · 15 min</span>';
+  STEPS.forEach(([id, label, part], i) => {
+    if(id === 'build') h += '<span class="part">Part 2 · 30 min</span>';
+    if(id === 'review') h += '<span class="part">After</span>';
+    h += `<button data-act="step" data-v="${id}" ${S.step===id?'aria-current="step"':''} ${stepAllowed(id)?'':'disabled'}><span class="n">${i+1}</span>${esc(label)}</button>`;
+  });
+  return h + '</nav>';
+}
+function caseCards(){
+  return '<div class="cases">' + Object.entries(CASES).map(([id, c]) =>
+    `<button class="case" data-act="case" data-v="${id}" aria-pressed="${S.caseId===id}"><span class="muted small">${esc(c.level)}</span><b>${esc(c.title)}</b><span class="small">${esc(c.topic)}</span></button>`).join('') + '</div>';
+}
+function render(){
+  document.querySelectorAll('[data-act=view]').forEach(b => b.setAttribute('aria-pressed', S.view === b.dataset.v));
+  document.querySelectorAll('[data-act=mode]').forEach(b => b.setAttribute('aria-pressed', S.mode === b.dataset.v));
+  if(S.view === 'playbook') app.innerHTML = playbook();
+  else if(S.view === 'history') app.innerHTML = historyView();
+  else app.innerHTML = caseView();
+  tick(); save();
+  const ch = document.getElementById('chat'); if(ch) ch.scrollTop = ch.scrollHeight;
+}
+function caseView(){
+  const c = C();
+  if(S.step === 'start') return `<h1>${esc(c.title)}: timed mock</h1>
+    <p class="muted">Same shape as the real thing. Part 1 is 15 minutes (read, ask, count, plan, note), then Part 2 is 30 minutes to build. Feedback stays hidden until the review. Pick a case, then start the clock.</p>
+    ${caseCards()}<div class="row"><button class="btn" data-act="startmock">Start the 15-minute clock</button><button class="ghost" data-act="mode" data-v="drill">Switch to drill instead</button></div>`;
+  let banner = '';
+  if(S.mode === 'mock' && S.phase === 2 && S.step === 'build') banner = '<div class="banner"><b>Part 2 has started.</b> Your plan and what the client told you are on the right. The checks are hidden: they pass or fail, and the review shows why.</div>';
+  const main = ({brief: stepBrief, ask: stepAsk, count: stepCount, plan: stepPlan, note: stepNote, build: stepBuild, review: stepReview})[S.step]();
+  if(S.step === 'review') return rail() + main;
+  return rail() + banner + `<div class="grid"><section class="card">${main}</section><aside class="tools">${S.step === 'build' ? buildSide() : toolsPanel()}</aside></div>`;
+}
+function clientHead(){ const c = C(); return `<div class="who"><div class="av">${esc(c.init)}</div><div><b>${esc(c.client)}</b><div class="muted small">${esc(c.role)}, ${esc(c.title)}</div></div></div>`; }
+function stepBrief(){
+  const c = C();
+  return `${S.mode==='drill' ? caseCards() : ''}<h2>The client's brief</h2>${clientHead()}<div class="brief">${esc(c.brief)}</div>
+  <p class="small muted">Read the brief and open each file on the right. Before you ask anything, write down what you'd need to know to put a number in front of this person and defend it.</p>
+  <h3>Your first read</h3><textarea rows="5" data-bind="firstRead" placeholder="What decision is the client making? What could make the obvious answer wrong?">${esc(S.firstRead||'')}</textarea>
+  <div class="row" style="margin-top:12px"><button class="btn" data-act="step" data-v="ask">Next: ask the client</button></div>`;
+}
+function stepAsk(){
+  const c = C(), crit = c.facts.filter(f => f.c), got = crit.filter(f => S.asked.includes(f.id)).length;
+  const fb = S.mode === 'drill' ? `<div class="row small" style="justify-content:space-between;margin:6px 0 4px"><span>Must-know topics uncovered</span><b>${got} / ${crit.length}</b></div><div class="meter"><i style="width:${pct(got,crit.length)}%"></i></div>
+    <details><summary>Stuck? Show the topics you haven't covered yet</summary><ul class="check">${crit.map(f => `<li class="${S.asked.includes(f.id)?'y':'n'}">${S.asked.includes(f.id) ? esc(f.a) : 'A topic about <i>' + esc(f.k.slice(0,2).join(' / ')) + '</i>'}</li>`).join('')}</ul></details>` : '';
+  return `<h2>Ask the client</h2>${clientHead()}
+  <p class="small muted">One question at a time works best. The client knows the business, not the data model, so ask about how things work, not about columns.</p>
+  <div class="chat" id="chat">${S.chat.length ? S.chat.map(m => m.me ? `<div class="msg me">${esc(m.me)}</div>` : `<div class="msg cl">${esc(m.cl)}</div>`).join('') : '<div class="msg cl">Hi! Happy to help. What do you need from me?</div>'}</div>
+  <form data-act="ask" class="row"><input type="text" id="q" placeholder="e.g. How do you define on time?" autocomplete="off" style="flex:1 1 240px"><button class="btn">Ask</button></form>
+  ${fb}<div class="row" style="margin-top:12px"><button class="ghost" data-act="step" data-v="count">Next: read & count</button></div>`;
+}
+function stepCount(){
+  const qs = GEN.COUNTS[S.caseId], show = S.mode === 'drill' && S.countChecked;
+  return `<h2>Read & count</h2><p class="small muted">In the real test the AI assistant does the counting. Here, the Python bench on the right is your assistant. Get exact numbers, and cross-check at least one of them a second way. Any surprise becomes a question for the client.</p>
+  ${qs.map((q, i) => { const v = S.counts[i], ok = Number(v) === q.a;
+    return `<div class="count"><label for="c${i}">${esc(q.q)}</label><input type="number" id="c${i}" data-count="${i}" value="${esc(v ?? '')}" inputmode="numeric">
+    ${show && v !== undefined && v !== '' ? `<div class="fb ${ok?'ok':'bad'}" style="grid-column:1/-1">${ok ? 'Correct.' : 'Not quite. Answer: ' + q.a}</div>` : ''}</div>`; }).join('')}
+  <div class="row" style="margin-top:12px">${S.mode==='drill' ? '<button class="btn" data-act="checkcounts">Check counts</button>' : ''}<button class="ghost" data-act="step" data-v="plan">Next: plan</button></div>`;
+}
+function rubricList(items){ return `<ul class="check">${items.map(r => `<li class="${r.ok?'y':'n'}">${esc(r.l)}</li>`).join('')}</ul>`; }
+function stepPlan(){
+  const show = S.mode === 'drill' && S.planChecked;
+  return `<h2>Write a short plan</h2><p class="small muted">This plan comes with you into Part 2. Keep it to about 10 lines: goal, inputs, steps, checks, assumptions, output.</p>
+  <textarea rows="14" data-bind="plan" placeholder="Goal:\nInputs:\nSteps:\n 1.\nChecks:\nAssumptions / open questions:\nOutput:">${esc(S.plan)}</textarea>
+  ${show ? `<h3 style="margin-top:14px">How your plan covers it</h3>${rubricList(planRubric(S.plan))}<details><summary>Show a model plan</summary><pre>${esc(C().modelPlan)}</pre></details>` : ''}
+  <div class="row" style="margin-top:12px">${S.mode==='drill' ? '<button class="btn" data-act="checkplan">Check plan</button>' : ''}<button class="ghost" data-act="step" data-v="note">Next: client note</button></div>`;
+}
+function stepNote(){
+  const show = S.mode === 'drill' && S.noteChecked;
+  return `<h2>Note to the client</h2><p class="small muted">Write it to ${esc(C().client.split(' ')[0])}, not to an engineer: what they'll get, when, the rules you're using, and the one thing you need them to confirm.</p>
+  <textarea rows="11" data-bind="note" placeholder="Hi ${esc(C().client.split(' ')[0])},">${esc(S.note)}</textarea>
+  ${show ? `<h3 style="margin-top:14px">How your note reads</h3>${rubricList(noteRubric(S.note))}<details><summary>Show a model note</summary><pre style="white-space:pre-wrap">${esc(C().modelNote)}</pre></details>` : ''}
+  <div class="row" style="margin-top:12px">${S.mode==='drill' ? '<button class="btn" data-act="checknote">Check note</button><button class="ghost" data-act="step" data-v="build">Next: build</button>' : '<button class="btn" data-act="endp1">Finish Part 1 and start Part 2</button>'}</div>`;
+}
+function stepBuild(){
+  const c = C(), t = S.tests, hidden = S.mode === 'mock' && !S.finished;
+  let tests = '';
+  if(t && t.error) tests = `<div class="out err">${esc(t.error)}</div>`;
+  else if(t) {
+    const n = t.results.filter(r => r.ok).length;
+    tests = `<p><b>${n} / ${t.results.length} checks pass</b>${S.testedCode !== S.code ? ' <span class="muted small">(code changed since this run)</span>' : ''}</p>` + t.results.map((r, i) => {
+      const T = GEN.TESTS[S.caseId][i];
+      return `<div class="test ${r.ok?'ok':'bad'}"><span class="tick">${r.ok?'✓':'✗'}</span>${hidden ? 'Hidden check ' + (i+1) : esc(T.label)}
+      ${!r.ok && !hidden ? `<div class="small muted" style="margin-top:4px">Client rule: ${esc(T.rule)}</div><details><summary class="small">Expected vs. got</summary><pre>${esc('expected: ' + r.exp + '\n\n     got: ' + (r.err || r.got))}</pre></details>` : ''}</div>`; }).join('');
+  }
+  return `<h2>Build: <code>${esc(c.fn)}()</code></h2>
+  ${S.mode === 'drill' ? `<details open><summary>The agreed spec</summary><pre>${esc(c.spec)}</pre></details>` : '<p class="small muted">You build from your own plan. Function name and arguments are in the starter code.</p>'}
+  <textarea class="code" rows="20" id="code" data-bind="code" spellcheck="false">${esc(S.code)}</textarea>
+  <div class="row" style="margin-top:10px"><button class="btn" data-act="runbuild">Run <span class="kbd">Ctrl+Enter</span></button><button class="btn" data-act="tests">Run checks</button><button class="ghost" data-act="resetcode">Reset code</button>${S.mode==='mock' ? '<button class="ghost" data-act="finish">Submit and review</button>' : '<button class="ghost" data-act="step" data-v="review">Review</button>'}</div>
+  <div class="out ${S.buildErr?'err':''}" id="buildout">${esc(S.buildOut || 'Output appears here.')}</div>
+  <div id="tests" style="margin-top:12px">${tests}</div>`;
+}
+function coachPanel(){
+  const c = C();
+  return `<h3>Coach</h3><p class="small muted">Hints get more specific each time. In the real test, ask the coach for the same kind of thing: a structure first, then a specific helper, and read every line it gives you.</p>
+  ${c.hints.slice(0, S.hintsShown).map((h, i) => `<div class="fb info"><b>Hint ${i+1}.</b> ${i === 2 ? '<pre style="margin:6px 0 0">' + esc(h) + '</pre>' : esc(h)}</div>`).join('')}
+  ${S.hintsShown < c.hints.length ? `<button class="ghost" data-act="hint">${S.hintsShown ? 'Another hint' : 'Ask the coach for a hint'}</button>` : ''}
+  ${S.mode === 'drill' || S.finished ? `<details><summary>Reference solution</summary><pre>${esc(GEN.REF[S.caseId])}</pre></details>` : ''}`;
+}
+function buildSide(){
+  const notes = S.chat.filter(m => m.cl).map(m => m.cl);
+  return `<div class="card" style="margin-bottom:16px">${coachPanel()}</div>
+  <div class="card" style="margin-bottom:16px"><h3>Your plan from Part 1</h3>${S.plan.trim() ? `<pre style="white-space:pre-wrap">${esc(S.plan)}</pre>` : '<p class="muted small">You didn\'t write a plan.</p>'}
+  <details><summary>What the client told you (${notes.length})</summary><ul>${notes.map(n => `<li class="small">${esc(n)}</li>`).join('')}</ul></details></div>
+  <div class="card">${filesBlock()}</div>`;
+}
+function filesBlock(){
+  const files = GEN.FILES[S.caseId], name = files[S.file] ? S.file : Object.keys(files)[0];
+  const lines = files[name].trim().split('\n'), rows = lines.map(l => parseLine(l));
+  return `<h3>Files</h3><div class="ftabs">${Object.keys(files).map(n => `<button data-act="file" data-v="${esc(n)}" aria-pressed="${n===name}">${esc(n)}</button>`).join('')}</div>
+  <div class="small muted" style="margin-bottom:6px">${lines.length - 1} rows. Spaces are shown as they are in the file; values are shown in quotes.</div>
+  <div class="tbl"><table><thead><tr>${rows[0].map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.slice(1).map(r => `<tr>${r.map(v => `<td>${v === '' ? '<span class="muted">·</span>' : '"' + esc(v) + '"'}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+}
+function parseLine(l){ const out = []; let cur = '', q = false; for(let i = 0; i < l.length; i++){ const ch = l[i]; if(q){ if(ch === '"' && l[i+1] === '"'){ cur += '"'; i++; } else if(ch === '"') q = false; else cur += ch; } else if(ch === '"') q = true; else if(ch === ','){ out.push(cur); cur = ''; } else cur += ch; } out.push(cur); return out; }
+function toolsPanel(){
+  return `<div class="card" style="margin-bottom:16px">${filesBlock()}</div>
+  <div class="card"><h3>Assistant bench (Python)</h3><p class="small muted">Use it to read and count. Variables persist between runs. <span class="kbd">Ctrl+Enter</span> runs.</p>
+  <textarea class="code" rows="9" id="scratch" data-bind="scratch" spellcheck="false">${esc(S.scratch)}</textarea>
+  <div class="row" style="margin-top:8px"><button class="btn" data-act="runscratch">Run</button><button class="ghost" data-act="resetns">Reset variables</button></div>
+  <div class="out ${S.scratchErr?'err':''}" id="scratchout">${esc(S.scratchOut || 'Output appears here.')}</div></div>`;
+}
+function summary(){
+  const c = C(), crit = c.facts.filter(f => f.c), q = crit.filter(f => S.asked.includes(f.id)).length;
+  const counts = GEN.COUNTS[S.caseId], cOk = counts.filter((x, i) => Number(S.counts[i]) === x.a).length;
+  const pr = planRubric(S.plan), nr = noteRubric(S.note);
+  const t = S.tests && S.tests.results ? S.tests.results.filter(r => r.ok).length : 0, tn = GEN.TESTS[S.caseId].length;
+  return {q, qn: crit.length, cOk, cn: counts.length, p: pr.filter(r => r.ok).length, pn: pr.length, n: nr.filter(r => r.ok).length, nn: nr.length, t, tn, pr, nr, crit};
+}
+function stepReview(){
+  const c = C(), s = summary();
+  const used = S.p1Start ? fmtTime(((S.p2Start || Date.now()) - S.p1Start)/1000) + ' + ' + (S.p2Start ? fmtTime((Math.min(Date.now(), S.endAt || Date.now()) - S.p2Start)/1000) : '00:00') : null;
+  return `<h1>${esc(c.title)}: review</h1>${used ? `<p class="muted">Time used: ${used} (Part 1 + Part 2)</p>` : ''}
+  <div class="stats">
+    <div class="stat"><b>${s.q}/${s.qn}</b><span>must-know topics asked</span></div>
+    <div class="stat"><b>${s.cOk}/${s.cn}</b><span>counts correct</span></div>
+    <div class="stat"><b>${s.p}/${s.pn}</b><span>plan coverage</span></div>
+    <div class="stat"><b>${s.n}/${s.nn}</b><span>client note</span></div>
+    <div class="stat"><b>${s.t}/${s.tn}</b><span>build checks passing</span></div>
+  </div>
+  <div class="grid"><section class="card">
+    <h3>Questions: what you'd have learned by asking</h3><ul class="check">${s.crit.map(f => `<li class="${S.asked.includes(f.id)?'y':'n'}">${esc(f.a)}</li>`).join('')}</ul>
+    <h3>Build checks</h3>${S.tests && S.tests.results ? S.tests.results.map((r, i) => `<div class="test ${r.ok?'ok':'bad'}"><span class="tick">${r.ok?'✓':'✗'}</span>${esc(GEN.TESTS[S.caseId][i].label)}${r.ok ? '' : `<div class="small muted">Client rule: ${esc(GEN.TESTS[S.caseId][i].rule)}</div>`}</div>`).join('') : '<p class="muted">No check run yet.</p>'}
+    <h3>Counts</h3><ul class="check">${GEN.COUNTS[S.caseId].map((x, i) => `<li class="${Number(S.counts[i])===x.a?'y':'n'}">${esc(x.q)} <b>${x.a}</b>${S.counts[i] !== undefined && S.counts[i] !== '' && Number(S.counts[i]) !== x.a ? ' (you said ' + esc(S.counts[i]) + ')' : ''}</li>`).join('')}</ul>
+  </section><section class="card">
+    <h3>Plan</h3>${rubricList(s.pr)}<details><summary>Model plan</summary><pre>${esc(c.modelPlan)}</pre></details>
+    <h3>Client note</h3>${rubricList(s.nr)}<details><summary>Model note</summary><pre style="white-space:pre-wrap">${esc(c.modelNote)}</pre></details>
+    <details><summary>Reference solution</summary><pre>${esc(GEN.REF[S.caseId])}</pre></details>
+    <div class="row" style="margin-top:14px"><button class="btn" data-act="again">Try this case again</button><button class="ghost" data-act="next">Next case</button></div>
+  </section></div>`;
+}
+function playbook(){
+  return `<h1>Playbook for the two-part client case</h1><p class="muted" style="max-width:70ch">This is a working method, not an official description of any company's test. The cases on the Case tab are built to reward exactly these habits: each one has traps that change the answer if you don't ask about them.</p>
+  <div class="pb">
+  <section class="card"><h3>Part 1: questions that always pay</h3><ol>
+    <li><b>Goal:</b> what decision does this number feed? Is there a threshold (SLA, budget)?</li>
+    <li><b>Definition:</b> what exactly counts as on time / a duplicate / downtime?</li>
+    <li><b>Scope:</b> which period, and by which date? Which entities are in?</li>
+    <li><b>Exclusions:</b> cancelled, planned, test, retired, refunded?</li>
+    <li><b>Identity:</b> what makes two records the same thing? (IDs, spellings, double logging)</li>
+    <li><b>Missing values:</b> what does a blank mean in their world?</li>
+    <li><b>Output:</b> who reads it, in what shape, at what precision?</li>
+    <li><b>Timing:</b> when is it needed, and is it one-off or recurring?</li></ol></section>
+  <section class="card"><h3>Reading and counting with the assistant</h3><ul>
+    <li>Ask for <b>exact counts</b> and the method behind them, not "roughly".</li>
+    <li>Count <b>raw vs. distinct</b> on every key column. A gap means duplicates or messy spellings.</li>
+    <li>Look at <b>distinct values</b> of every code or category column.</li>
+    <li>Check <b>min and max</b> of every date. Rows outside the window are a question.</li>
+    <li>Cross-check <b>one number a second way</b>. Assistants miscount.</li>
+    <li>Every surprise becomes a client question, or an assumption you write down.</li></ul></section>
+  <section class="card"><h3>Plan template (about 10 lines)</h3><pre>Goal:  the decision + any threshold
+Inputs: files, row counts, keys
+Steps:  clean → filter → identify → compute
+Checks: totals reconcile, hand-trace 2–3 rows
+Assumptions / open questions:
+Output: shape, audience, precision</pre></section>
+  <section class="card"><h3>Client note: five moves</h3><ol>
+    <li>What they'll get, in their words.</li><li>When.</li><li>The rules you agreed, played back briefly.</li>
+    <li>The one assumption you need confirmed.</li><li>No jargon: no "dedupe", "normalize" or "dataframe".</li></ol></section>
+  <section class="card"><h3>Part 2: working with the coach</h3><ul>
+    <li>Paste your plan's rules into the coach first, then ask for the <b>function skeleton only</b>.</li>
+    <li>Ask for one helper at a time (date parser, ID normalizer). Test each one on a tricky value.</li>
+    <li>Turn each client rule into a tiny test case. "Write 5 two-row inputs that test these rules."</li>
+    <li>Run it on the real file and <b>reconcile against your Part 1 counts</b>.</li>
+    <li>Read every line it writes. Ask "what does this do with a blank value?"</li>
+    <li>Plain Python beats clever code. Leave 5 minutes for a final sanity pass and a one-line summary.</li></ul></section>
+  <section class="card"><h3>The Palantir-style lens</h3><p>Commercial Palantir work is mostly this: messy exports from several systems, turned into trusted <b>objects</b> (Shipment, Vendor, Press) with clear keys, and <b>metrics</b> the business has agreed on. In every case, ask:</p><ul>
+    <li>What is the object, and what is its real key?</li><li>Which source wins when two disagree?</li><li>Who owns the definition of the metric?</li><li>What would make this a pipeline that runs every month, and not a one-off script?</li></ul></section>
+  </div>
+  <h2 style="margin-top:26px">Pick a case</h2>${caseCards()}`;
+}
+function historyView(){
+  const h = STORE.history;
+  return `<h1>History</h1>${h.length ? `<div class="scroll"><table class="stack"><thead><tr><th>When</th><th>Case</th><th>Mode</th><th>Questions</th><th>Counts</th><th>Plan</th><th>Note</th><th>Checks</th></tr></thead><tbody>${h.slice().reverse().map(r => `<tr><td>${esc(r.when)}</td><td>${esc(r.case)}</td><td>${esc(r.mode)}</td><td>${esc(r.q)}</td><td>${esc(r.c)}</td><td>${esc(r.p)}</td><td>${esc(r.n)}</td><td>${esc(r.t)}</td></tr>`).join('')}</tbody></table></div><div class="row" style="margin-top:12px"><button class="ghost" data-act="clearhist">Clear history</button></div>` : '<p class="muted">Finish a review and it shows up here, so you can see whether you\'re asking better questions over time. Stored in this browser only.</p>'}`;
+}
+
+/* ------------------------------------------------------------ timer */
+function tick(){
+  const el = document.getElementById('timer');
+  if(S.mode !== 'mock' || !S.phase || S.phase === 3){ el.hidden = true; return; }
+  const now = Date.now();
+  const left = S.phase === 1 ? 900 - (now - S.p1Start)/1000 : 1800 - (now - S.p2Start)/1000;
+  el.hidden = false; el.textContent = (S.phase === 1 ? 'Part 1 ' : 'Part 2 ') + fmtTime(left);
+  el.classList.toggle('low', left < 120);
+  if(left <= 0){ if(S.phase === 1) startP2(); else finish(); }
+}
+setInterval(() => { if(S.mode === 'mock' && (S.phase === 1 || S.phase === 2)) tick(); }, 1000);
+function startP2(){ S.phase = 2; S.p2Start = Date.now(); S.step = 'build'; render(); }
+async function finish(){
+  if(S.phase === 3) return;
+  S.phase = 3; S.finished = true; S.endAt = Date.now(); S.step = 'review'; render();
+  if(S.testedCode !== S.code){ try{ S.tests = await grade(); S.testedCode = S.code; }catch(e){} }
+  record(); render();
+}
+function record(){
+  if(S.saved) return; S.saved = true;
+  const s = summary();
+  STORE.history.push({when: new Date().toLocaleString([], {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'}), case: C().title, mode: S.mode,
+    q: s.q + '/' + s.qn, c: s.cOk + '/' + s.cn, p: s.p + '/' + s.pn, n: s.n + '/' + s.nn, t: s.t + '/' + s.tn});
+  if(STORE.history.length > 60) STORE.history = STORE.history.slice(-60);
+}
+
+/* ------------------------------------------------------------ events */
+function newAttempt(caseId, mode){ STORE.cur = fresh(caseId, mode); S = STORE.cur; }
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-act]'); if(!b || b.tagName === 'FORM') return;
+  const a = b.dataset.act, v = b.dataset.v;
+  if(a === 'view'){ S.view = v; location.hash = v === 'case' ? '' : v; render(); }
+  else if(a === 'mode'){ if(v !== S.mode){ newAttempt(S.caseId, v); render(); } }
+  else if(a === 'case'){ const view = S.view; if(v !== S.caseId || S.view !== 'case'){ if(v !== S.caseId) newAttempt(v, S.mode); S.view = 'case'; } render(); }
+  else if(a === 'step'){ if(stepAllowed(v)){ S.step = v; if(v === 'review' && S.mode === 'drill' && !S.saved){ if(S.testedCode !== S.code){ try{ S.tests = await grade(); S.testedCode = S.code; }catch(err){} } record(); } render(); window.scrollTo({top:0}); } }
+  else if(a === 'startmock'){ S.phase = 1; S.p1Start = Date.now(); S.step = 'brief'; render(); }
+  else if(a === 'endp1'){ startP2(); }
+  else if(a === 'finish'){ finish(); }
+  else if(a === 'checkcounts'){ S.countChecked = true; render(); }
+  else if(a === 'checkplan'){ S.planChecked = true; render(); }
+  else if(a === 'checknote'){ S.noteChecked = true; render(); }
+  else if(a === 'file'){ S.file = v; render(); }
+  else if(a === 'hint'){ S.hintsShown++; render(); }
+  else if(a === 'resetcode'){ S.code = C().starter; S.tests = null; render(); }
+  else if(a === 'resetns'){ delete nsCache['scratch-' + S.caseId]; S.scratchOut = 'Variables cleared.'; S.scratchErr = false; render(); }
+  else if(a === 'runscratch'){ await doRun('scratch'); }
+  else if(a === 'runbuild'){ await doRun('build'); }
+  else if(a === 'tests'){ const el = document.getElementById('tests'); el.innerHTML = '<p class="muted">Running checks…</p>';
+    try{ S.tests = await grade(); S.testedCode = S.code; }catch(err){ S.tests = {error: String(err.message || err)}; } render(); }
+  else if(a === 'again'){ newAttempt(S.caseId, S.mode); render(); }
+  else if(a === 'next'){ const ids = Object.keys(CASES); newAttempt(ids[(ids.indexOf(S.caseId)+1) % ids.length], S.mode); render(); }
+  else if(a === 'clearhist'){ STORE.history = []; render(); }
+});
+async function doRun(which){
+  const outEl = document.getElementById(which === 'scratch' ? 'scratchout' : 'buildout');
+  if(outEl){ outEl.classList.remove('err'); outEl.textContent = py ? 'Running…' : 'Loading Python (first run takes a few seconds)…'; }
+  try{
+    const r = which === 'scratch' ? await runIn(S.scratch, 'scratch-' + S.caseId, false) : await runIn(S.code, 'build', true);
+    const text = r.out.trim() || '(no output; use print())';
+    if(which === 'scratch'){ S.scratchOut = text; S.scratchErr = r.err; } else { S.buildOut = text; S.buildErr = r.err; }
+    if(outEl){ outEl.textContent = text; outEl.classList.toggle('err', r.err); }
+    save();
+  }catch(err){ if(outEl){ outEl.textContent = 'Python could not load: ' + (err.message || err) + '\nCheck your connection and reload the page.'; outEl.classList.add('err'); } }
+}
+document.addEventListener('submit', e => {
+  const f = e.target.closest('form[data-act=ask]'); if(!f) return; e.preventDefault();
+  const inp = document.getElementById('q'), q = inp.value.trim(); if(!q) return;
+  askClient(q); render(); const n = document.getElementById('q'); if(n) n.focus();
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if(t.dataset.bind){ S[t.dataset.bind] = t.value; save(); }
+  if(t.dataset.count !== undefined){ S.counts[t.dataset.count] = t.value; save(); }
+});
+document.addEventListener('keydown', e => {
+  const t = e.target;
+  if(t.tagName === 'TEXTAREA' && t.classList.contains('code')){
+    if(e.key === 'Tab' && !e.shiftKey){ e.preventDefault(); const s = t.selectionStart; t.setRangeText('    ', s, t.selectionEnd, 'end'); t.dispatchEvent(new Event('input', {bubbles:true})); }
+    if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)){ e.preventDefault(); doRun(t.id === 'scratch' ? 'scratch' : 'build'); }
+  }
+});
+function fromHash(){ const h = location.hash.slice(1); if(h === 'playbook' || h === 'history') S.view = h; else if(h === '' && S.view !== 'case') {} }
+window.addEventListener('hashchange', () => { const h = location.hash.slice(1); S.view = (h === 'playbook' || h === 'history') ? h : 'case'; render(); });
+fromHash();
+if(S.mode === 'mock' && S.phase === 1 && (Date.now() - S.p1Start) / 1000 > 900) startP2();
+render();
+initPy().catch(() => {});
+}
+</script>
+</body>
+</html>
